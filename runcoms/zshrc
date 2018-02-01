@@ -5,9 +5,125 @@
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
 #
 
+export EVENT_NOEPOLL=1
+export PATH=$PATH:$HOME/.local/bin
+
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Customize to your needs...
+# Load GPG Agent if daemon is already running
+_gpg_agent_info=~/.gpg-agent-info
+
+if [[ -f $_gpg_agent_info ]]; then
+    source $_gpg_agent_info
+fi
+
+gpg-agent-restart () {
+    killall ssh-agent gpg-agent
+    unset GPG_AGENT_INFO SSH_AGENT_PID SSH_AUTH_SOCK
+    eval $(gpg-agent --daemon --enable-ssh-support)
+    source $_gpg_agent_info
+}
+
+# NPM Token
+
+npm-token () {
+    [ ! -f ~/.npmrc ] && npm login
+    grep _authToken ~/.npmrc | sed 's@.*=@@'
+}
+
+# Emacs
+em() {
+    if [ -z "$@" ]; then
+        emacsclient -nw $(pwd)
+    else
+        emacsclient -nw $@
+    fi
+}
+
+[[ $EMACS = t ]] && unsetopt zle
+
+# PATH
+export PATH=/usr/local/bin:$HOME/bin:$HOME/.npm-packages/bin:$HOME/.node/bin:$HOME/.cask/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+
+# Aliases
+alias e='em'
+alias en="emacsclient -n"
+alias er="emacs-restart"
+alias ec="emacs-clean"
+alias f="find . -name"
+alias zshconfig="e ~/.zshrc"
+alias jc="j --complete"
+alias jw="jump-window"
+alias reload="source ~/.zshrc"
+alias gdt="git difftool"
+alias gtool="git mergetool"
+alias go="export GIT_ONTO=$(git rev-parse --abbrev-ref HEAD); git rebase --onto"
+alias gpfu="gpf -u"
+alias fs="foreman start"
+
+# Docker
+alias dm='docker-machine'
+alias dme='function () { e="$(docker-machine env ${1-default})"; echo $e; eval $e }'
+alias dms='function () { docker-machine start ${1-default} }'
+alias dmh='function () { docker-machine stop ${1-default} }'
+alias dmr='function () { docker-machine restart ${1-default} }'
+alias dmk='function () { docker-machine kill ${1-default} }'
+alias db='docker build'
+alias dp='docker push'
+
+# Default Editor
+export EDITOR="emacsclient -t"
+export VISUAL="emacsclient -t"
+
+# Auto jump Commands
+export AUTOJUMP_AUTOCOMPLETE_CMDS='e en cat less vi open'
+
+# Pure Theme Settings
+export PURE_GIT_UNTRACKED_DIRTY=0
+export PURE_GIT_PULL=0
+
+dotfile_update () {
+    [ -d ~/dotfiles ] && cd ~/dotfiles;
+    [ -d ~/.dotfiles ] && cd ~/.dotfiles;
+    git pull
+    git submodule foreach git pull origin master
+    reload
+}
+
+# Z
+if (( $+commands[brew] )) ; then
+    . `brew --prefix`/etc/profile.d/z.sh
+fi
+
+# Vagrant Share
+export VAGRANT_USER_SHARE=~/src
+
+# Android SDK
+export ANDROID_HOME=/usr/local/opt/android-sdk
+
+# WebPageTest
+export WPT_API_KEY="A.917bb4520516548b80daedccd4b82532"
+
+# Autojump
+if (( $+commands["brew"] )) ; then
+    [[ -s `brew --prefix`/etc/autojump.sh ]] && . `brew --prefix`/etc/autojump.sh
+fi
+
+export GIT_TERMINAL_PROMPT=1
+
+# NPM
+eval "$(npm completion 2>/dev/null)"
+export NPM_TOKEN=$(npm-token)
+
+# RVM
+[[ -s ~/.rvm/scripts/rvm ]] && source ~/.rvm/scripts/rvm && rvm use default > /dev/null
+
+PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+
+source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# Start GPG agent
+gpg-agent-restart || gpg-agent-restart
