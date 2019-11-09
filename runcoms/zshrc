@@ -50,6 +50,7 @@ export PATH=/usr/local/bin:$HOME/bin:$HOME/.npm-packages/bin:$HOME/.node/bin:$HO
 
 # Aliases
 alias e='em'
+alias eek='killall -USR2 emacs'
 alias en="emacsclient -n"
 alias er="emacs-restart"
 alias ec="emacs-clean"
@@ -61,7 +62,10 @@ alias reload="source ~/.zshrc"
 alias gdt="git difftool"
 alias gtool="git mergetool"
 alias go="export GIT_ONTO=$(git rev-parse --abbrev-ref HEAD); git rebase --onto"
+alias gpr="git open"
 alias gpfu="gpf -u"
+alias gre="git recent -n 5"
+alias grel="git recent"
 alias fs="foreman start"
 
 # Docker
@@ -73,6 +77,11 @@ alias dmr='function () { docker-machine restart ${1-default} }'
 alias dmk='function () { docker-machine kill ${1-default} }'
 alias db='docker build'
 alias dp='docker push'
+
+# VLC
+alias vlco='function () { url=https://www.youtube.com/watch?v=$1; echo $url; open -a VLC $url }'
+alias chillhop='vlco bebuiaSKtU4'
+alias cyberpunk='vlco PKnbAHA8eOk'
 
 # Default Editor
 export EDITOR="emacsclient -t"
@@ -114,6 +123,9 @@ fi
 
 export GIT_TERMINAL_PROMPT=1
 
+# GitHub Personal Authentication Token
+export GH_TOKEN=$(git config github.token);
+
 # NPM
 eval "$(npm completion 2>/dev/null)"
 export NPM_TOKEN=$(npm-token)
@@ -143,6 +155,65 @@ load-nvmrc() {
 add-zsh-hook chpwd load-nvmrc
 load-nvmrc
 
+# YVM
+export YVM_DIR="$HOME/.yvm"
+[ -s "$YVM_DIR/yvm.sh" ] && \. "$YVM_DIR/yvm.sh" # This loads yvm
+
+yvm_find_up () {
+	local path_
+	path_="${PWD}"
+	while [ "${path_}" != "" ] && [ ! -f "${path_}/${1-}" ]
+	do
+		path_=${path_%/*}
+	done
+	echo "${path_}"
+}
+
+yvm_find_yvmrc () {
+	local dir
+	dir="$(yvm_find_up '.yvmrc')"
+	if [ -e "${dir}/.yvmrc" ]
+	then
+		echo "${dir}/.yvmrc"
+	fi
+}
+
+autoload -U add-zsh-hook
+load-yvmrc() {
+  local yvmrc_path="$(yvm_find_yvmrc)"
+  if [ -n "$yvmrc_path" ]; then
+    local yarn_version="$(yarn --version)"
+    local yvmrc_yarn_version="$(cat $yvmrc_path)";
+    if [ "$yvmrc_node_version" != "$yarn_version" ]; then
+      yvm use
+    fi
+  else
+    echo $yvmrc_path
+    echo "Reverting to yvm default version"
+    yvm use default
+  fi
+}
+add-zsh-hook chpwd load-yvmrc
+load-yvmrc
+
+tmux-git-rename() {
+  local git_dir="$(git rev-parse --git-dir 2> /dev/null)"
+  if [ -n "$git_dir" ]; then
+    tmux rename-window "$(basename $(dirname $git_dir:A))"
+  else
+    tmux rename-window "$(basename $PWD:A)"
+  fi
+}
+add-zsh-hook chpwd tmux-git-rename
+tmux-git-rename
+
+# AWS
+ecr-login () {
+  src=$(aws ecr get-login --no-include-email --profile catalytic-dev);
+  echo ECR Repository ${src##* http*://};
+  eval $src >&2
+}
+
 # RVM
 [[ -s ~/.rvm/scripts/rvm ]] && source ~/.rvm/scripts/rvm && rvm use default > /dev/null
 
@@ -155,3 +226,5 @@ gpg-agent-restart || gpg-agent-restart
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
+export YVM_DIR=/Users/ian/.yvm
+[ -r $YVM_DIR/yvm.sh ] && . $YVM_DIR/yvm.sh
