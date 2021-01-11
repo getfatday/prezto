@@ -6,7 +6,6 @@
 #
 
 export EVENT_NOEPOLL=1
-export PATH=$PATH:$HOME/.local/bin
 
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
@@ -21,10 +20,10 @@ if [[ -f $_gpg_agent_info ]]; then
 fi
 
 gpg-agent-restart () {
-    killall ssh-agent gpg-agent
-    unset GPG_AGENT_INFO SSH_AGENT_PID SSH_AUTH_SOCK
-    eval $(gpg-agent --daemon --enable-ssh-support)
-    source $_gpg_agent_info
+  gpgconf --kill gpg-agent
+  unset GPG_AGENT_INFO SSH_AGENT_PID SSH_AUTH_SOCK
+  eval $(gpg-agent --daemon --enable-ssh-support)
+  source $_gpg_agent_info
 }
 
 # NPM Token
@@ -60,6 +59,7 @@ alias jc="j --complete"
 alias jw="jump-window"
 alias reload="source ~/.zshrc"
 alias gdt="git difftool"
+alias gR="gf && gwR @{u}"
 alias gtool="git mergetool"
 alias go="export GIT_ONTO=$(git rev-parse --abbrev-ref HEAD); git rebase --onto"
 alias gpr="git open"
@@ -107,6 +107,17 @@ if (( $+commands[brew] )) ; then
     . `brew --prefix`/etc/profile.d/z.sh
 fi
 
+# Redact Shell History
+redact () {
+  if [ -z "$@" ]; then
+    echo "Missing statement to redact" 1>&2
+    return;
+  fi
+  LC_ALL=C sed -i '' '/'$@'/d' $HISTFILE;
+  fc -R;
+  clear;
+}
+
 # Vagrant Share
 export VAGRANT_USER_SHARE=~/src
 
@@ -125,6 +136,7 @@ export GIT_TERMINAL_PROMPT=1
 
 # GitHub Personal Authentication Token
 export GH_TOKEN=$(git config github.token);
+export GITHUB_AUTH=$GH_TOKEN;
 
 # NPM
 eval "$(npm completion 2>/dev/null)"
@@ -209,7 +221,7 @@ tmux-git-rename
 
 # AWS
 ecr-login () {
-  src=$(aws ecr get-login --no-include-email --profile catalytic-dev);
+  src=$(aws ecr get-login --no-include-email);
   echo ECR Repository ${src##* http*://};
   eval $src >&2
 }
